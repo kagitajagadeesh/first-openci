@@ -2,10 +2,10 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-commands:
-  print_pipeline_id:
-    steps:
-      - run: echo ${CIRCLE_WORKFLOW_ID}
+# commands:
+#   print_pipeline_id:
+#     steps:
+#       - run: echo ${CIRCLE_WORKFLOW_ID}
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
@@ -53,22 +53,36 @@ jobs:
   #     - image: circleci/node:13.8.0
   #   steps:
   #     - print_pipeline_id
-  fail_job:
+  # fail_job:
+  #   docker:
+  #     - image: circleci/node:13.8.0
+  #   steps:
+  #     - run: exit 1
+  #     - run:
+  #         name: on error
+  #         command: echo "Hello Error!"
+  #         when: on_fail
+  create_infrastructure:
     docker:
-      - image: circleci/node:13.8.0
+      - image: amazon/aws-cli
     steps:
-      - run: exit 1
+      - checkout
       - run:
-          name: on error
-          command: echo "Hello Error!"
-          when: on_fail
+          name: Create Cloudformation Stack
+          command: |
+            aws cloudformation deploy \
+                --template-file template.yml \
+                --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
+                --region us-west-2
+    
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   say-hello-workflow:
     jobs:
-      - fail_job
+      - create_infrastructure
+      # - fail_job
       # - print_circle_workflow_id
       # - save_hello_world_output
       # - print_output_file:
