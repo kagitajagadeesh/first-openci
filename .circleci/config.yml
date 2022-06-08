@@ -6,7 +6,7 @@ orbs:
   # Declare a dependency on the welcome-orb
   # welcome: circleci/welcome-orb@0.4.1
   aws-cli: circleci/aws-cli@2.0.3
-  
+
 # commands:
 #   print_pipeline_id:
 #     steps:
@@ -94,7 +94,22 @@ jobs:
           name: Run Playbook and Configure server
           command: |
             ansible-playbook -i inventory.txt main.yml
-    
+    smoke_test:
+      docker:
+        - image: alpine:latest
+      steps:
+        - run: apk add --update curl
+        - run:
+            name: smoke test
+            command: |
+              URL="https://blog.udacity.com/"
+              # Test if website exists
+              if curl -s --head ${URL} 
+              then
+                return 0
+              else
+                return 1
+              fi
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -102,6 +117,9 @@ workflows:
   say-hello-workflow:
     jobs:
       - configure_infrastructure
+      - smoke_test:
+          requires:
+            - configure_infrastructure
       # - create_infrastructure
       # - fail_job
       # - print_circle_workflow_id
