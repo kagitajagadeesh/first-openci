@@ -62,18 +62,33 @@ jobs:
   #         name: on error
   #         command: echo "Hello Error!"
   #         when: on_fail
-  create_infrastructure:
+  # create_infrastructure:
+  #   docker:
+  #     - image: amazon/aws-cli
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: Create Cloudformation Stack
+  #         command: |
+  #           aws cloudformation deploy \
+  #               --template-file template.yml \
+  #               --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
+  #               --region us-west-2
+  configure_infrastructure:
     docker:
-      - image: amazon/aws-cli
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
+      - add_ssh_keys:
+              fingerprints: ["54:01:ac:db:21:18:b0:d4:1d:df:ed:be:dd:ef:d8:33"]
       - run:
-          name: Create Cloudformation Stack
+          name: Install Ansible
           command: |
-            aws cloudformation deploy \
-                --template-file template.yml \
-                --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
-                --region us-west-2
+            apk add --update ansible
+      - run:
+          name: Run Playbook and Configure server
+          command: |
+            ansible-playbook -i inventory main-remote.yml
     
 
 # Invoke jobs via workflows
@@ -81,7 +96,8 @@ jobs:
 workflows:
   say-hello-workflow:
     jobs:
-      - create_infrastructure
+      - configure_infrastructure
+      # - create_infrastructure
       # - fail_job
       # - print_circle_workflow_id
       # - save_hello_world_output
